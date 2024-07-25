@@ -1,8 +1,8 @@
 import customtkinter as ctk
-from tkinter import messagebox
-from tkinter import filedialog
+from tkinter import messagebox, filedialog, ttk
 import requests
 import pandas as pd
+from PIL import Image, ImageTk
 from utils import start_driver, pt_search_scrape, process_and_match_data
 from paths import get_mrn_paths
 
@@ -10,18 +10,19 @@ class MIPApp:
     def __init__(self, root):
         self.root = root
         self.root.title('MIP Patient Data Acquisition')
-        self.root.geometry("400x300")
+        self.root.geometry("600x400")
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
 
         self.template_path = None
         self.output_path = None
+        self.excel_path = None
         self.new_window = None
 
         self.edData = []
 
-        self.create_main_window()
+        self.create_login_window()
 
-    def create_main_window(self):
+    def create_login_window(self):
         form_frame = ctk.CTkFrame(self.root)
         form_frame.pack(pady=20)
 
@@ -51,11 +52,29 @@ class MIPApp:
                 messagebox.showerror('Error', 'Invalid username or password. Please try again.')
             else:
                 self.root.withdraw()
-                self.open_new_window(username, password)
+                self.create_selection_page(username, password)
         except Exception as e:
             messagebox.showerror('Error', f'An error occurred: {e}')
 
-    def open_new_window(self, username, password):
+    def create_selection_page(self, username, password):
+        if self.new_window is not None:
+            self.new_window.destroy()
+        
+        self.new_window = ctk.CTkToplevel()
+        self.new_window.title("Select Entry Method")
+        self.new_window.geometry("400x300")
+        self.new_window.protocol("WM_DELETE_WINDOW", self.on_closing)
+
+        manual_button = ctk.CTkButton(self.new_window, text="Manually Enter Patient IDs and Sides", font=("Helvetica", 14),
+                                      command=lambda: self.create_manual_entry_page(username, password))
+        manual_button.pack(pady=20)
+
+        upload_button = ctk.CTkButton(self.new_window, text="Upload Excel File", font=("Helvetica", 14),
+                                      command=lambda: self.create_upload_entry_page(username, password))
+        upload_button.pack(pady=20)
+
+    def create_manual_entry_page(self, username, password):
+        self.new_window.withdraw()
         self.new_window = ctk.CTkToplevel()
         self.new_window.title("Enter Patient IDs and Sides")
         self.new_window.geometry("600x400")
@@ -81,11 +100,56 @@ class MIPApp:
         collect_button = ctk.CTkButton(self.new_window, text="Collect Data", font=("Helvetica", 14), command=lambda: self.collect_data(username, password))
         collect_button.pack(pady=20)
 
+        back_button = ctk.CTkButton(self.new_window, text="Back", font=("Helvetica", 14), command=lambda: self.go_back_to_selection_page(username, password))
+        back_button.pack(pady=10)
+
+    def create_upload_entry_page(self, username, password):
+        self.new_window.withdraw()
+        self.new_window = ctk.CTkToplevel()
+        self.new_window.title("Upload Patient Data")
+        self.new_window.geometry("600x400")
+        self.new_window.protocol("WM_DELETE_WINDOW", self.on_closing)
+
+        choose_excel_button = ctk.CTkButton(self.new_window, text="Choose Excel File", font=("Helvetica", 14), command=self.choose_excel_file)
+        choose_excel_button.pack(pady=20)
+
+        disclaimer_label = ctk.CTkLabel(self.new_window, text="Note: No more than 20 entries at a time.", font=("Helvetica", 12))
+        disclaimer_label.pack(pady=10)
+
+        '''
+        # Add an example image
+        image = Image.open("path_to_example_image.png")
+        image = image.resize((400, 200), Image.ANTIALIAS)
+        photo = ImageTk.PhotoImage(image)
+        image_label = ctk.CTkLabel(self.new_window, image=photo)
+        image_label.image = photo
+        image_label.pack(pady=10)
+        '''
+
+        choose_template_button = ctk.CTkButton(self.new_window, text="Choose Template File", font=("Helvetica", 14), command=self.choose_template_file)
+        choose_template_button.pack(pady=20)
+
+        choose_output_button = ctk.CTkButton(self.new_window, text="Choose Output File Location", font=("Helvetica", 14), command=self.choose_output_location)
+        choose_output_button.pack(pady=20)
+
+        collect_button = ctk.CTkButton(self.new_window, text="Collect Data", font=("Helvetica", 14), command=lambda: self.collect_data_from_excel(username, password))
+        collect_button.pack(pady=20)
+
+        back_button = ctk.CTkButton(self.new_window, text="Back", font=("Helvetica", 14), command=lambda: self.go_back_to_selection_page(username, password))
+        back_button.pack(pady=10)
+
+    def go_back_to_selection_page(self, username, password):
+        self.new_window.destroy()
+        self.create_selection_page(username, password)
+
     def choose_template_file(self):
         self.template_path = filedialog.askopenfilename(title="Select RedCAP CSV Import Template")
 
     def choose_output_location(self):
         self.output_path = filedialog.asksaveasfilename(title="Choose Output File Location", defaultextension=".csv", filetypes=[("CSV files", "*.csv")])
+
+    def choose_excel_file(self):
+        self.excel_path = filedialog.askopenfilename(title="Select Excel File", filetypes=[("Excel files", "*.xlsx;*.xls")])
 
     def add_entry_row(self):
         row = len(self.entries_frame.winfo_children()) // 4
@@ -110,12 +174,45 @@ class MIPApp:
             side = entries[i + 3].get()
             data.append((patient_id, side))
 
+        self.start_collection(data, username, password)
+
+    def collect_data_from_excel(self, username, password):
+        if not self.excel_path:
+            messagebox.showerror("Error", "Please choose an Excel file.")
+            return
+
+        df = pd.read_excel(self.excel_path)
+        if len(df) > 20:
+            messagebox.showerror("Error", "Please ensure there are no more than 20 entries in the Excel file.")
+            return
+
+        data = list(zip(df['Patient ID'], df['Side']))
+        self.start_collection(data, username, password)
+
+    def start_collection(self, data, username, password):
+        progress_window = ctk.CTkToplevel()
+        progress_window.title("Progress")
+        progress_window.geometry("400x100")
+
+        progress_label = ctk.CTkLabel(progress_window, text="Collecting data, please wait...", font=("Helvetica", 14))
+        progress_label.pack(pady=10)
+
+        progress_bar = ttk.Progressbar(progress_window, mode='determinate', maximum=len(data))
+        progress_bar.pack(pady=10, padx=20, fill='x')
+
+        progress_step = 100 / len(data)
+
+        def update_progress(step):
+            progress_bar.step(step)
+            progress_bar.update_idletasks()
+
         print('Starting driver')
         auth_url = f'http://{username}:{password}@mipresearch.org/otopilot/MUSC2/index.php?p=Tool.getPatientTable'
         driver = start_driver(auth_url)
 
         for patient_id, side in data:
             pt_search_scrape(patient_id, side, driver, self.edData)
+            update_progress(progress_step)
 
         driver.quit()
 
@@ -141,6 +238,8 @@ class MIPApp:
         dfED = pd.DataFrame(formattedData)
 
         process_and_match_data(dfED, self.template_path, self.output_path, mrn_path, mrn_path2)
+        progress_window.destroy()
+        messagebox.showinfo("Success", "Data collection completed successfully!")
 
     def on_closing(self):
         if self.new_window is not None:
