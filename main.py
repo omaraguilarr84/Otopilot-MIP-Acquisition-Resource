@@ -2,11 +2,7 @@ import customtkinter as ctk
 from tkinter import messagebox
 from tkinter import filedialog
 import requests
-import time
-import random
 import pandas as pd
-import re
-import math
 from utils import start_driver, pt_search_scrape, process_and_match_data
 from paths import get_mrn_paths
 
@@ -143,10 +139,8 @@ class MIPApp:
             formattedData.append(formatted_row)
 
         dfED = pd.DataFrame(formattedData)
-        dfED.to_csv('c:\\Users\\omarh\\Documents\\Summer 24 - MUSC\\musc_ent\\Data\\app_data.csv', index=False, mode='w')
-        messagebox.showinfo('Success', 'Data collection completed.')
 
-        process_and_match_data(dfED, self.template_path, self.output_path)
+        process_and_match_data(dfED, self.template_path, self.output_path, mrn_path, mrn_path2)
 
     def on_closing(self):
         if self.new_window is not None:
