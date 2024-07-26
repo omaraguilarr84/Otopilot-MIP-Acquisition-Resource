@@ -10,7 +10,7 @@ class MIPApp:
     def __init__(self, root):
         self.root = root
         self.root.title('MIP Patient Data Acquisition')
-        self.root.geometry("600x400")
+        self.root.geometry("400x300")
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
 
         self.template_path = None
@@ -113,24 +113,28 @@ class MIPApp:
         choose_excel_button = ctk.CTkButton(self.new_window, text="Choose Excel File", font=("Helvetica", 14), command=self.choose_excel_file)
         choose_excel_button.pack(pady=20)
 
-        disclaimer_label = ctk.CTkLabel(self.new_window, text="Note: No more than 20 entries at a time.", font=("Helvetica", 12))
-        disclaimer_label.pack(pady=10)
-
-        '''
-        # Add an example image
-        image = Image.open("path_to_example_image.png")
-        image = image.resize((400, 200), Image.ANTIALIAS)
-        photo = ImageTk.PhotoImage(image)
-        image_label = ctk.CTkLabel(self.new_window, image=photo)
-        image_label.image = photo
-        image_label.pack(pady=10)
-        '''
-
         choose_template_button = ctk.CTkButton(self.new_window, text="Choose Template File", font=("Helvetica", 14), command=self.choose_template_file)
         choose_template_button.pack(pady=20)
 
         choose_output_button = ctk.CTkButton(self.new_window, text="Choose Output File Location", font=("Helvetica", 14), command=self.choose_output_location)
         choose_output_button.pack(pady=20)
+
+        image_frame = ctk.CTkFrame(self.new_window)
+        image_frame.pack(pady=20)
+
+        # Add the example image
+        try:
+            image = Image.open("path_to_example_image.png")  # Update this path if necessary
+            image = image.resize((500, 250), Image.ANTIALIAS)
+            photo = ImageTk.PhotoImage(image)
+            image_label = ctk.CTkLabel(image_frame, image=photo)
+            image_label.image = photo  # Keep a reference to prevent garbage collection
+            image_label.pack(pady=10)
+        except Exception as e:
+            print(f"Error loading image: {e}")
+
+        disclaimer_label = ctk.CTkLabel(self.new_window, text="Note: No more than 20 entries at a time.", font=("Helvetica", 12))
+        disclaimer_label.pack(pady=10)
 
         collect_button = ctk.CTkButton(self.new_window, text="Collect Data", font=("Helvetica", 14), command=lambda: self.collect_data_from_excel(username, password))
         collect_button.pack(pady=20)
