@@ -10,7 +10,7 @@ class MIPApp:
     def __init__(self, root):
         self.root = root
         self.root.title('MIP Patient Data Acquisition')
-        self.root.geometry("600x400")
+        self.root.geometry("400x300")
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
 
         self.template_path = None
@@ -113,24 +113,28 @@ class MIPApp:
         choose_excel_button = ctk.CTkButton(self.new_window, text="Choose Excel File", font=("Helvetica", 14), command=self.choose_excel_file)
         choose_excel_button.pack(pady=20)
 
-        disclaimer_label = ctk.CTkLabel(self.new_window, text="Note: No more than 20 entries at a time.", font=("Helvetica", 12))
-        disclaimer_label.pack(pady=10)
-
-        '''
-        # Add an example image
-        image = Image.open("path_to_example_image.png")
-        image = image.resize((400, 200), Image.ANTIALIAS)
-        photo = ImageTk.PhotoImage(image)
-        image_label = ctk.CTkLabel(self.new_window, image=photo)
-        image_label.image = photo
-        image_label.pack(pady=10)
-        '''
-
         choose_template_button = ctk.CTkButton(self.new_window, text="Choose Template File", font=("Helvetica", 14), command=self.choose_template_file)
         choose_template_button.pack(pady=20)
 
         choose_output_button = ctk.CTkButton(self.new_window, text="Choose Output File Location", font=("Helvetica", 14), command=self.choose_output_location)
         choose_output_button.pack(pady=20)
+
+        image_frame = ctk.CTkFrame(self.new_window)
+        image_frame.pack(pady=20)
+
+        # Add the example image
+        try:
+            image = Image.open("excel_ex.png")  # Update this path if necessary
+            image = image.resize((500, 250), Image.ANTIALIAS)
+            photo = ImageTk.PhotoImage(image)
+            image_label = ctk.CTkLabel(image_frame, image=photo)
+            image_label.image = photo  # Keep a reference to prevent garbage collection
+            image_label.pack(pady=10)
+        except Exception as e:
+            print(f"Error loading image: {e}")
+
+        disclaimer_label = ctk.CTkLabel(self.new_window, text="Note: No more than 20 entries at a time.", font=("Helvetica", 12))
+        disclaimer_label.pack(pady=10)
 
         collect_button = ctk.CTkButton(self.new_window, text="Collect Data", font=("Helvetica", 14), command=lambda: self.collect_data_from_excel(username, password))
         collect_button.pack(pady=20)
@@ -187,7 +191,7 @@ class MIPApp:
             return
 
         data = list(zip(df['Patient ID'], df['Side']))
-        self.start_collection(data, username, password)
+        self.start_collection_from_excel(data, username, password)
 
     def start_collection(self, data, username, password):
         progress_window = ctk.CTkToplevel()
@@ -240,6 +244,70 @@ class MIPApp:
         process_and_match_data(dfED, self.template_path, self.output_path, mrn_path, mrn_path2)
         progress_window.destroy()
         messagebox.showinfo("Success", "Data collection completed successfully!")
+
+    def start_collection_from_excel(self, data, username, password):
+        try:
+            progress_window = ctk.CTkToplevel()
+            progress_window.title("Progress")
+            progress_window.geometry("400x100")
+
+            progress_label = ctk.CTkLabel(progress_window, text="Collecting data, please wait...", font=("Helvetica", 14))
+            progress_label.pack(pady=10)
+
+            progress_bar = ttk.Progressbar(progress_window, mode='determinate', maximum=len(data))
+            progress_bar.pack(pady=10, padx=20, fill='x')
+
+            progress_step = 100 / len(data)
+
+            def update_progress(step):
+                progress_bar.step(step)
+                progress_bar.update_idletasks()
+            
+            df = pd.read_excel(self.excel_path)
+            if 'Patient ID' not in df.columns or 'Side' not in df.columns:
+                messagebox.showerror("Error", "Excel file must contain 'Patient ID' and 'Side' columns.")
+                return
+
+            data = list(zip(df['Patient ID'], df['Side']))
+
+            print('Starting driver')
+            auth_url = f'http://{username}:{password}@mipresearch.org/otopilot/MUSC2/index.php?p=Tool.getPatientTable'
+            driver = start_driver(auth_url)
+
+            for patient_id, side in data:
+                pt_search_scrape(patient_id, side, driver, self.edData)
+                update_progress(progress_step)
+
+            driver.quit()
+
+            processedData = {}
+            for data in self.edData:
+                patient_id = data['Patient ID']
+                if patient_id not in processedData:
+                    processedData[patient_id] = []
+                processedData[patient_id].append(data)
+
+            formattedData = []
+            for patient_id, electrodes in processedData.items():
+                formatted_row = {'Patient ID': patient_id}
+                for i, electrode in enumerate(electrodes):
+                    formatted_row[f'Electrode Number {i+1}'] = electrode['Electrode Number']
+                    formatted_row[f'Distance {i+1}'] = electrode['Distance']
+                    formatted_row[f'Angle {i+1}'] = electrode['Angle']
+                    formatted_row[f'Place Frequency {i+1}'] = electrode['Place Frequency']
+                    formatted_row[f'Channel Frequency {i+1}'] = electrode['Channel Frequency']
+                    formatted_row[f'Scalar Location {i+1}'] = electrode['Scalar Location']
+                formattedData.append(formatted_row)
+
+            dfED = pd.DataFrame(formattedData)
+
+            process_and_match_data(dfED, self.template_path, self.output_path, mrn_path, mrn_path2)
+            progress_window.destroy()
+            messagebox.showinfo("Success", "Data collection completed successfully!")
+
+        except Exception as e:
+            messagebox.showerror("Error", f"An error occurred while processing the Excel file: {e}")
+
 
     def on_closing(self):
         if self.new_window is not None:
