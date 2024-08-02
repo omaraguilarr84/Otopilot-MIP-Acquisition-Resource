@@ -5,12 +5,13 @@ import pandas as pd
 from PIL import Image, ImageTk
 from utils import start_driver, pt_search_scrape, process_and_match_data
 from paths import get_mrn_paths
+import time
 
 class MIPApp:
     def __init__(self, root):
         self.root = root
         self.root.title('MIP Patient Data Acquisition')
-        self.root.geometry("400x300")
+        self.root.geometry("700x600")
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
 
         self.template_path = None
@@ -215,8 +216,17 @@ class MIPApp:
         driver = start_driver(auth_url)
 
         for patient_id, side in data:
-            pt_search_scrape(patient_id, side, driver, self.edData)
-            update_progress(progress_step)
+            try:
+                pt_search_scrape(patient_id, side, driver, self.edData)
+                update_progress(progress_step)
+            except Exception as e:
+                    time.sleep(3)
+                    driver = start_driver(auth_url)
+                    try:
+                        pt_search_scrape(patient_id, side, driver, self.edData)
+                    except Exception as e:
+                        messagebox.showerror('Error', f'Instance failed for Patient ID: {patient_id} due to {e}')
+            time.sleep(3)
 
         driver.quit()
 
@@ -275,8 +285,10 @@ class MIPApp:
             driver = start_driver(auth_url)
 
             for patient_id, side in data:
+                update_progress(progress_step)
                 pt_search_scrape(patient_id, side, driver, self.edData)
                 update_progress(progress_step)
+                time.sleep(3)
 
             driver.quit()
 
