@@ -13,7 +13,7 @@ from webdriver_manager.chrome import ChromeDriverManager
 from tkinter import messagebox
 
 def start_driver(auth_url):
-    options = webdriver.ChromeOptions()
+    options = Options()
     
     user_agents = [
         'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
@@ -23,18 +23,16 @@ def start_driver(auth_url):
     user_agent = random.choice(user_agents)
     options.add_argument(f'user-agent={user_agent}')
 
-    options.add_argument("--disable-blink-features=AutomationControlled")
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
-    options.add_argument("--disable-infobars")
-    #options.add_argument("--headless")
-    options.page_load_strategy = 'eager'
+    options.add_argument("--remote-debugging-port=9222")
+    options.add_argument("--headless=new")
 
     try:
         service = Service(ChromeDriverManager().install())
         driver = webdriver.Chrome(service=service, options=options)
         driver.get(auth_url)
-        time.sleep(random.uniform(3, 10))
+        time.sleep(10)
         return driver
     except Exception as e:
         messagebox.showerror('Error', f'Failed to start driver: {e}')
@@ -58,9 +56,6 @@ def pt_search_scrape(id, side, driver, edData):
         
         ed_table = driver.find_element(By.XPATH, '//*[@id="ed_chart1"]/div/div/table/tbody')
         electrodes = ed_table.find_elements(By.XPATH, './tr')
-
-        mbar_str = driver.find_element(By.XPATH, '//*[@id="mean_dist_text"]').text
-        mbar = mbar_str[-4:]
 
         for electrode in electrodes:
             info = electrode.find_elements(By.XPATH, './td')
@@ -158,4 +153,3 @@ def process_and_match_data(dfED, template_path, output_path, mrn_path, mrn_path2
         template[f'scalar_location_{i}'] = template[f'scalar_location_{i}'].map(sl_mapping)
 
     template.to_csv(output_path, index=False, mode='w')
-    messagebox.showinfo("Success", "Data processed and matched successfully.")
