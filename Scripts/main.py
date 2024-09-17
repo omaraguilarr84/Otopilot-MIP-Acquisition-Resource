@@ -4,7 +4,7 @@ import requests
 import pandas as pd
 from PIL import Image, ImageTk
 import time
-import threading
+from IPython.display import display, Image
 from utils import start_driver, pt_search_scrape, process_and_match_data
 from paths import get_mrn_paths
 
@@ -16,6 +16,7 @@ class MIPApp:
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
 
         self.template_path = None
+        self.mrn_path = None
         self.output_path = None
         self.excel_path = None
         self.new_window = None
@@ -96,6 +97,9 @@ class MIPApp:
         choose_template_button = ctk.CTkButton(self.new_window, text="Choose Template File", font=("Helvetica", 14), command=self.choose_template_file)
         choose_template_button.pack(pady=10)
 
+        choose_mrn_button = ctk.CTkButton(self.new_window, text="Choose MRN File", font=("Helvetica", 14), command=self.choose_mrn_file)
+        choose_mrn_button.pack(pady=10)
+
         choose_output_button = ctk.CTkButton(self.new_window, text="Choose Output File Location", font=("Helvetica", 14), command=self.choose_output_location)
         choose_output_button.pack(pady=10)
 
@@ -118,24 +122,13 @@ class MIPApp:
         choose_template_button = ctk.CTkButton(self.new_window, text="Choose Template File", font=("Helvetica", 14), command=self.choose_template_file)
         choose_template_button.pack(pady=20)
 
+        choose_mrn_button = ctk.CTkButton(self.new_window, text="Choose MRN File", font=("Helvetica", 14), command=self.choose_mrn_file)
+        choose_mrn_button.pack(pady=10)
+
         choose_output_button = ctk.CTkButton(self.new_window, text="Choose Output File Location", font=("Helvetica", 14), command=self.choose_output_location)
         choose_output_button.pack(pady=20)
 
-        image_frame = ctk.CTkFrame(self.new_window)
-        image_frame.pack(pady=20)
-
-        # Add the example image
-        try:
-            image = Image.open("excel_ex.png")  # Update this path if necessary
-            image = image.resize((500, 250), Image.ANTIALIAS)
-            photo = ImageTk.PhotoImage(image)
-            image_label = ctk.CTkLabel(image_frame, image=photo)
-            image_label.image = photo  # Keep a reference to prevent garbage collection
-            image_label.pack(pady=10)
-        except Exception as e:
-            print(f"Error loading image: {e}")
-
-        disclaimer_label = ctk.CTkLabel(self.new_window, text="Note: No more than 20 entries at a time.", font=("Helvetica", 12))
+        disclaimer_label = ctk.CTkLabel(self.new_window, text="Note: No more than 20 entries at a time.", font=("Helvetica", 16))
         disclaimer_label.pack(pady=10)
 
         collect_button = ctk.CTkButton(self.new_window, text="Collect Data", font=("Helvetica", 14), command=lambda: self.collect_data_from_excel(username, password))
@@ -150,6 +143,9 @@ class MIPApp:
 
     def choose_template_file(self):
         self.template_path = filedialog.askopenfilename(title="Select RedCAP CSV Import Template")
+
+    def choose_mrn_file(self):
+        self.mrn_path = filedialog.askopenfilename(title="Choose MRN Matching Path")
 
     def choose_output_location(self):
         self.output_path = filedialog.asksaveasfilename(title="Choose Output File Location", defaultextension=".csv", filetypes=[("CSV files", "*.csv")])
@@ -238,7 +234,7 @@ class MIPApp:
 
         dfED = pd.DataFrame(formattedData)
 
-        process_and_match_data(dfED, self.template_path, self.output_path, mrn_path, mrn_path2)
+        process_and_match_data(dfED, self.template_path, self.output_path, self.mrn_path)
         messagebox.showinfo("Success", "Data collection completed successfully!")
 
     def start_collection_from_excel(self, data, username, password):
@@ -285,7 +281,7 @@ class MIPApp:
 
             dfED = pd.DataFrame(formattedData)
 
-            process_and_match_data(dfED, self.template_path, self.output_path, mrn_path, mrn_path2)
+            process_and_match_data(dfED, self.template_path, self.output_path, self.mrn_path)
             messagebox.showinfo("Success", "Data collection completed successfully!")
 
         except Exception as e:
@@ -297,8 +293,8 @@ class MIPApp:
         self.root.destroy()
 
 if __name__ == "__main__":
-    computer_choice = input("Which computer are you using? (Enter 'mac' or 'pc'): ").strip().lower()
-    mrn_path, mrn_path2 = get_mrn_paths(computer_choice)
+    #computer_choice = input("Which computer are you using? (Enter 'mac' or 'pc'): ").strip().lower()
+    #mrn_path = MIPApp.mrn_path
 
     root = ctk.CTk()
     app = MIPApp(root)

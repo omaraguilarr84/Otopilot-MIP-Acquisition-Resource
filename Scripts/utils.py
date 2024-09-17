@@ -77,11 +77,10 @@ def pt_search_scrape(id, side, driver, edData):
         print(f'Failed Attempt for Patient ID: {id}: {e}')
         driver.quit()
 
-def process_and_match_data(dfED, template_path, output_path, mrn_path, mrn_path2):
+def process_and_match_data(dfED, template_path, output_path, mrn_path):
     # Load Data
     electrodeData = dfED
     mrnData = pd.read_excel(mrn_path)
-    mrnData2 = pd.read_excel(mrn_path2, sheet_name='main')
     template = pd.read_csv(template_path)
 
     # Clean Data
@@ -100,18 +99,7 @@ def process_and_match_data(dfED, template_path, output_path, mrn_path, mrn_path2
             row_data['MRN'] = mrn
             matched.append(row_data)
         else:
-            mrn_row2 = mrnData2[mrnData2['CI number'] == pt_id]
-
-            if not mrn_row2.empty:
-                mrn = mrn_row2.iloc[0]['MRN']
-                try:
-                    mrn_float = float(mrn)
-                    if not math.isnan(mrn_float):
-                        row_data = row.to_dict()
-                        row_data['MRN'] = mrn
-                        matched.append(row_data)
-                except ValueError:
-                    continue
+            messagebox.showerror('Error', f'MRN not found for {pt_id}')
 
     dfMatched = pd.DataFrame(matched)
 
