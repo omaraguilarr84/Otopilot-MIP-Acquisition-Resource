@@ -2,11 +2,8 @@ import customtkinter as ctk
 from tkinter import messagebox, filedialog, ttk
 import requests
 import pandas as pd
-from PIL import Image, ImageTk
 import time
-from IPython.display import display, Image
 from utils import start_driver, pt_search_scrape, process_and_match_data
-from paths import get_mrn_paths
 
 class MIPApp:
     def __init__(self, root):
@@ -151,7 +148,7 @@ class MIPApp:
         self.output_path = filedialog.asksaveasfilename(title="Choose Output File Location", defaultextension=".csv", filetypes=[("CSV files", "*.csv")])
 
     def choose_excel_file(self):
-        self.excel_path = filedialog.askopenfilename(title="Select Excel File", filetypes=[("Excel files", "*.xlsx;*.xls")])
+        self.excel_path = filedialog.askopenfilename(title="Select Excel File")
 
     def add_entry_row(self):
         row = len(self.entries_frame.winfo_children()) // 4
