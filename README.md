@@ -16,4 +16,9 @@ This is an application that uses the Custom tkinter library and selenium to scra
 **Uploading an Excel File for Patient ID Entry**
 - There are bot detection restrictions when accessing the MIP web database, so the maximum amount of entries to be entered into the application is 20 patients.
 - The formatting for the excel file should be followed as seen in the image below:
+
 ![excel_ex](https://github.com/user-attachments/assets/80378f4a-282a-4168-abd5-f3ae381da5bd)
+
+# Resources
+- REDCap CSV Import Template: https://github.com/omaraguilarr84/Otopilot-MIP-Acquisition-Resource/blob/main/Assets/RedCAP%20CSV%20Import%20Template%20copy.csv
+- Excel Patient ID Import Template: https://github.com/omaraguilarr84/Otopilot-MIP-Acquisition-Resource/blob/main/Assets/excel%20import.xlsx
