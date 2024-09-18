@@ -14,4 +14,6 @@ This is an application that uses the Custom tkinter library and selenium to scra
 - Lastly, click "Collect Data". Please do not interfere with this process, as it can cause the program to crash. It should take around 45 seconds to complete the collection for each patient ID.
 
 **Uploading an Excel File for Patient ID Entry**
-- 
+- There are bot detection restrictions when accessing the MIP web database, so the maximum amount of entries to be entered into the application is 20 patients.
+- The formatting for the excel file should be followed as seen in the image below:
+![excel_ex](https://github.com/user-attachments/assets/80378f4a-282a-4168-abd5-f3ae381da5bd)
